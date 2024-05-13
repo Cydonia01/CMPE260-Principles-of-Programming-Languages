@@ -3,22 +3,24 @@
 ; compiling: yes
 ; complete: yes
 
-#lang scheme
+#lang racket
+
+(provide (all-defined-out))
 
 ;; Function 1: Converts binary string to decimal
 (define (binary_to_decimal binary)
-    (string->number binary 2))
+  (string->number binary 2))
 
 ;; Function 2: Converts logical addresses to physical addresses
-(define (relocation_mapping args limit base)
-   (cond
+(define (relocator args limit base)
+  (cond
      ((null? args) '()) ;; Base case: if the argument list is empty, return empty list
      (else
        (cond
          ((> (binary_to_decimal (car args)) limit) ;; If logical address exceeds limit, add -1 to list
-          (cons -1 (relocation_mapping (cdr args) limit base)))
+          (cons -1 (relocator (cdr args) limit base)))
          (else (cons (+ base (binary_to_decimal (car args))) ;; Otherwise, add base to logical address and add to list
-                     (relocation_mapping (cdr args) limit base)))))))
+                     (relocator (cdr args) limit base)))))))
 
 ;; Function 3: Divides a logical address to page number and page offset according to given page_size
 (define (divide_address_space num page_size)
@@ -34,7 +36,7 @@
   (- (string-length args) (+ 10 (log_base_2 page_size))))
 
 ;; Function 4: Returns the list of physical addresses of the given logical adresses using page_table and page_size
-(define (page args page_table page_size)
+(define (page args page_table  page_size)
   (cond
     ((null? args) '())
     (else (let ((new_bits (list-ref page_table (binary_to_decimal (substring (car args) 0 (page_number_bits (car args) page_size)))))) ;; find corresponding bits to replace the page number
@@ -47,8 +49,8 @@
 ;; Function 5: Finds the sine of an angle given in num by using the Taylor series expansion, up to a predefined number sum
 (define (find_sin value num)
   (cond
-    ((even? num) (- (compute_terms value num) (compute_terms value (- num 1))))
-    (else (- (compute_terms value (- num 1)) (compute_terms value num)))))
+    ((even? num) (- (compute_terms value (- num 2)) (compute_terms value (- num 1))))
+    (else (- (compute_terms value (- num 1)) (compute_terms value(- num 2))))))
 
 ;; Helper function to find the factorial of a number
 (define (factorial n)
@@ -67,7 +69,7 @@
 ;; Function 6: Returns the hash value of a given binary number.
 (define (myhash arg table_size)
   (let ((number (binary_to_decimal arg)))
-       (remainder (sum_digits (find_sin number (remainder number 5))) table_size))) ;; Sums first ten digits after decimal point and takes mod of table_size
+       (remainder (sum_digits (find_sin number (+ 1 (remainder number 5)))) table_size))) ;; Sums first ten digits after decimal point and takes mod of table_size
 
 ;; Helper function to convert digits to list
 (define (convert_digits_to_list n)
@@ -86,9 +88,9 @@
   (apply + (digits_after_decimal_point number)))
 
 ;; Function 7: Returns the physical adress for a given logical addres args by using hashed page table
-(define (hashed_page args table_size page_table page_size)
-  (let ((page_number (substring args 0 (page_number_bits args page_size)))) ;; Finds the page number
-       (replace_bits args (page_number_bits args page_size) ;; Concatenates the frame number with the page offset
+(define (hashed_page arg table_size page_table page_size)
+  (let ((page_number (substring arg 0 (page_number_bits arg page_size)))) ;; Finds the page number
+       (replace_bits arg (page_number_bits arg page_size) ;; Concatenates the frame number with the page offset
                           (compare_heads page_number (list-ref page_table (myhash page_number table_size))))))
 
 ;; Helper function to find the fram number. It compares the hashed page number with the heads of the lists at the corresponding hash table index.
@@ -104,8 +106,8 @@
     (else (cons (list (substring args 0 size)) (split_addresses (substring args size) size)))))
 
 ;; Function 9: Returns a list of physical adresses for a stream of logical addresses by using a hashed page table.
-(define (map_adresses args table_size page_table page_size space_size)
+(define (map_addresses args table_size page_table page_size address_space_size)
   (cond
     ((equal? args "") '())
-    (else (cons (hashed_page (substring args 0 space_size) table_size page_table page_size)
-                (map_adresses (substring args space_size) table_size page_table page_size space_size)))))
+    (else (cons (hashed_page (substring args 0 address_space_size) table_size page_table page_size)
+                (map_addresses (substring args address_space_size) table_size page_table page_size address_space_size)))))
