@@ -6,3 +6,4 @@ my-outputs
 .vscode*
 *.exe
 *.o
+*.bak
